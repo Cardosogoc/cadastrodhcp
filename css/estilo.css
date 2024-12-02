@@ -1,0 +1,66 @@
+body{
+    background-color: rgb(78, 142, 236);
+    font: normal 15pt Arial;
+}
+header{
+    color: white;
+    text-align: center;
+}
+section{
+    background-color: white;
+    border-radius: 10px;
+    padding: 15px;
+    width: 500px;
+    margin: auto;
+    box-shadow: 3px 3px 10px black;
+}
+footer{
+    color: white;
+    text-align: center;
+}
+
+.meu-formulario {
+    max-width: 400px; /* Ajuste conforme necessário */
+    margin: 0 auto;
+}
+
+.campo {
+    margin-bottom: 15px; /* Espaçamento entre os campos */
+}
+
+label {
+    display: block; /* Faz o label ocupar toda a largura */
+    margin-bottom: 5px; /* Espaçamento entre o label e o input */
+    font-weight: bold; /* Deixa o texto do label em negrito */
+}
+
+input {
+    width: 100%; /* Faz o input ocupar toda a largura disponível */
+    padding: 10px; /* Espaçamento interno do input */
+    border: 1px solid #ccc; /* Borda do input */
+    border-radius: 4px; /* Bordas arredondadas */
+    box-sizing: border-box; /* Para incluir padding e borda no tamanho total */
+}
+
+input:focus {
+    border-color: #007bff; /* Cor da borda ao focar no input */
+    outline: none; /* Remove o contorno padrão */
+}
+.botao-container {
+    text-align: center; /* Centraliza o botão */
+}
+
+button {
+    background-color: #007bff; /* Cor de fundo do botão */
+    color: #fff; /* Cor do texto */
+    padding: 10px 20px; /* Espaçamento interno do botão */
+    border: none; /* Remove a borda padrão */
+    border-radius: 4px; /* Bordas arredondadas */
+    cursor: pointer; /* Muda o cursor ao passar sobre o botão */
+    font-size: 16px; /* Tamanho da fonte */
+    transition: background-color 0.3s; /* Transição suave para a cor de fundo */
+}
+
+button:hover {
+    background-color: #0056b3; /* Cor do botão ao passar o mouse */
+}
