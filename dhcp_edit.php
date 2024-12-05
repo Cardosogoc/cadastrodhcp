@@ -2,8 +2,8 @@
 // Define o caminho do arquivo dhcpd.conf na mesma pasta do script PHP em caso de local
 //$arquivo_dhcp = __DIR__ . '/conf/dhcpd.conf';
 
-//em caso de servidor
-$arquivo_dhcp = 'etc/conf/dhcpd.conf';
+
+$arquivo_dhcp = '/etc/conf/dhcpd.conf';
 
 // Função para extrair as informações de host do arquivo dhcpd.conf
 function extrair_hosts_dhcp($arquivo)
