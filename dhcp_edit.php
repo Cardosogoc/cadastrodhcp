@@ -48,7 +48,8 @@ function verificar_existencia($hosts, $novo_hostname, $novo_ip, $novo_mac, $orig
 }
 
 // Função para validar o formato do IP e MAC
-function validar_ip_mac($ip, $mac) {
+function validar_ip_mac($ip, $mac)
+{
     // Validação de IP (deve ter quatro blocos de números separados por pontos)
     if (!filter_var($ip, FILTER_VALIDATE_IP)) {
         return 'Endereço IP inválido.';
@@ -62,10 +63,10 @@ function validar_ip_mac($ip, $mac) {
     return false;
 }
 
-// Função para atualizar o arquivo dhcpd.conf
+// Função para atualizar o arquivo dhcpd.conf com o formato correto
 function atualizar_dhcp($arquivo, $original_hostname, $novo_hostname, $novo_ip, $novo_mac, $hosts)
 {
-    // Verificar se o novo hostname, IP ou MAC já existem
+    // Verificar se o novo hostname, IP ou MAC já existem, exceto para o host original
     $erro = verificar_existencia($hosts, $novo_hostname, $novo_ip, $novo_mac, $original_hostname);
     if ($erro) {
         return $erro;
@@ -77,38 +78,98 @@ function atualizar_dhcp($arquivo, $original_hostname, $novo_hostname, $novo_ip, 
         return $erro_validacao;
     }
 
+    // Separar o cabeçalho das configurações e os hosts
+    $conteudo_atual = file_get_contents($arquivo);
+    $linhas = explode("\n", $conteudo_atual);
+
+    // Preservar as primeiras 12 linhas (cabeçalho)
+    $cabecalho = array_slice($linhas, 0, 12);
+
+    // Recriar o array de hosts atualizado
+    $novo_hosts = [];
+    $host_encontrado = false;
+
+    foreach ($hosts as $host) {
+        // Se encontrar o host original, atualiza os dados
+        if ($host['hostname'] === $original_hostname) {
+            $novo_hosts[] = [
+                'hostname' => $novo_hostname,
+                'ip' => $novo_ip,
+                'mac' => $novo_mac,
+            ];
+            $host_encontrado = true;
+        } else {
+            // Caso contrário, mantém o host original
+            $novo_hosts[] = $host;
+        }
+    }
+
+    // Se o host original não foi encontrado, adiciona como novo
+    if (!$host_encontrado) {
+        $novo_hosts[] = [
+            'hostname' => $novo_hostname,
+            'ip' => $novo_ip,
+            'mac' => $novo_mac,
+        ];
+    }
+
+    // Reescrever o arquivo dhcpd.conf
     if (file_exists($arquivo) && is_writable($arquivo)) {
-        $conteudo = file_get_contents($arquivo);
+        $novo_conteudo = implode("\n", $cabecalho) . "\n\n"; // Adicionar o cabeçalho preservado
 
-        // Usa regex para localizar o bloco do host original e substituir pelos novos valores
-        $pattern = '/(host\s+' . preg_quote($original_hostname, '/') . '\s+\{\s+hardware\s+ethernet\s+[\da-fA-F:]+;\s+fixed-address\s+[\d.]+;)/';
-        $novo_bloco = "host $novo_hostname {\n    hardware ethernet $novo_mac;\n    fixed-address $novo_ip;";
+        foreach ($novo_hosts as $host) {
+            $novo_conteudo .= "host {$host['hostname']} {\n";
+            $novo_conteudo .= "    hardware ethernet {$host['mac']};\n";
+            $novo_conteudo .= "    fixed-address {$host['ip']};\n";
+            $novo_conteudo .= "}\n\n";
+        }
 
-        $novo_conteudo = preg_replace($pattern, $novo_bloco, $conteudo);
+        // Salva o novo conteúdo no arquivo
+        file_put_contents($arquivo, trim($novo_conteudo));
 
-        // Escreve o novo conteúdo de volta no arquivo
-        file_put_contents($arquivo, $novo_conteudo);
+        // Executa o comando para reiniciar o serviço DHCP
+        exec('sudo systemctl restart isc-dhcp-server.service', $output, $return_var);
+
+        // Verifica se o comando foi executado corretamente
+        if ($return_var !== 0) {
+            return 'Erro ao reiniciar o serviço DHCP: ' . implode("\n", $output);
+        }
 
         return true;
     }
-    return false;
+
+    return 'Erro ao acessar o arquivo dhcpd.conf.';
 }
 
 // Função para excluir um host do arquivo dhcpd.conf
 function excluir_host_dhcp($arquivo, $hostname)
 {
+    $conteudo_atual = file_get_contents($arquivo);
+    $linhas = explode("\n", $conteudo_atual);
+
+    // Preservar as primeiras 12 linhas (cabeçalho)
+    $cabecalho = array_slice($linhas, 0, 12);
+
+    $hosts = extrair_hosts_dhcp($arquivo);
+    $novo_hosts = array_filter($hosts, function ($host) use ($hostname) {
+        return $host['hostname'] !== $hostname; // Remove apenas o host correspondente
+    });
+
+    // Reescrever o arquivo
     if (file_exists($arquivo) && is_writable($arquivo)) {
-        $conteudo = file_get_contents($arquivo);
+        $novo_conteudo = implode("\n", $cabecalho) . "\n\n"; // Adicionar o cabeçalho preservado
 
-        // Usa regex para localizar o bloco do host e removê-lo
-        $pattern = '/host\s+' . preg_quote($hostname, '/') . '\s+\{\s+hardware\s+ethernet\s+[\da-fA-F:]+;\s+fixed-address\s+[\d.]+;\s*\}/';
-        $novo_conteudo = preg_replace($pattern, '', $conteudo);
+        foreach ($novo_hosts as $host) {
+            $novo_conteudo .= "host {$host['hostname']} {\n";
+            $novo_conteudo .= "    hardware ethernet {$host['mac']};\n";
+            $novo_conteudo .= "    fixed-address {$host['ip']};\n";
+            $novo_conteudo .= "}\n\n";
+        }
 
-        // Escreve o novo conteúdo de volta no arquivo
-        file_put_contents($arquivo, $novo_conteudo);
-
+        file_put_contents($arquivo, trim($novo_conteudo));
         return true;
     }
+
     return false;
 }
 
@@ -259,14 +320,15 @@ $hosts = extrair_hosts_dhcp($arquivo_dhcp);
             background-color: #0056b3;
             /* Cor ao passar o mouse */
         }
-        a{
+
+        a {
             margin-right: 80%;
         }
     </style>
 </head>
 
 <body>
-   
+
     <section>
         <a href="dhcp_include.php"><button>Reservar Endereços</button></a>
         <h3>Endereços Cadastrados:</h3>
@@ -341,7 +403,7 @@ $hosts = extrair_hosts_dhcp($arquivo_dhcp);
         }
 
         // Função para fechar o modal
-        function closeModal() { 
+        function closeModal() {
             document.getElementById('editModal').style.display = "none";
         }
 
