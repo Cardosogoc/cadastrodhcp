@@ -80,11 +80,32 @@ function adicionar_host_dhcp($arquivo, $novo_hostname, $novo_ip, $novo_mac, $hos
     }
 
     if (file_exists($arquivo) && is_writable($arquivo)) {
-        // Criar novo bloco para o host
-        $novo_bloco = "\nhost $novo_hostname {\n    hardware ethernet $novo_mac;\n    fixed-address $novo_ip;\n";
+        // Ler o conteúdo atual do arquivo
+        $conteudo_atual = file_get_contents($arquivo);
+        $linhas = explode("\n", $conteudo_atual);
 
-        // Adicionar o novo bloco ao final do arquivo
-        file_put_contents($arquivo, $novo_bloco, FILE_APPEND);
+        // Preservar as primeiras 12 linhas (cabeçalho)
+        $cabecalho = array_slice($linhas, 0, 12);
+
+        // Adicionar o novo host ao array de hosts
+        $hosts[] = [
+            'hostname' => $novo_hostname,
+            'ip' => $novo_ip,
+            'mac' => $novo_mac
+        ];
+
+        // Recriar o conteúdo formatado do arquivo
+        $novo_conteudo = implode("\n", $cabecalho) . "\n\n"; // Preserva o cabeçalho com uma separação
+
+        foreach ($hosts as $host) {
+            $novo_conteudo .= "host {$host['hostname']} {\n";
+            $novo_conteudo .= "    hardware ethernet {$host['mac']};\n";
+            $novo_conteudo .= "    fixed-address {$host['ip']};\n";
+            $novo_conteudo .= "}\n\n";
+        }
+
+        // Salvar o novo conteúdo no arquivo
+        file_put_contents($arquivo, trim($novo_conteudo));
 
         return true;
     }
@@ -103,7 +124,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Adicionar o novo host ao arquivo dhcpd.conf
     $resultado = adicionar_host_dhcp($arquivo_dhcp, $novo_hostname, $novo_ip, $novo_mac, $hosts);
     if ($resultado === true) {
-        header('Location: ' . $_SERVER['PHP_SELF']); // Redireciona para a página atual
+        // Reiniciar o serviço DHCP após a inclusão bem-sucedida
+        $comando = 'sudo systemctl restart isc-dhcp-server.service';
+        shell_exec($comando);
+
+        // Redireciona para a página atual
+        header('Location: ' . $_SERVER['PHP_SELF']);
         exit;
     } else {
         $erro = $resultado; // Mostrar a mensagem de erro se houver
