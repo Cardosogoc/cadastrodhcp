@@ -3,7 +3,7 @@
 //$arquivo_dhcp = __DIR__ . '/conf/dhcpd.conf';
 
 //em caso de servidor
-$arquivo_dhcp = '/conf/dhcpd.conf';
+$arquivo_dhcp = 'etc/conf/dhcpd.conf';
 
 // Função para extrair as informações de host do arquivo dhcpd.conf
 function extrair_hosts_dhcp($arquivo)

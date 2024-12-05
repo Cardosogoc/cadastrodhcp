@@ -3,7 +3,7 @@
 //$arquivo_dhcp = __DIR__ . '/conf/dhcpd.conf';
 
 //em caso de servidor
-$arquivo_dhcp = '/conf/dhcpd.conf';
+$arquivo_dhcp = 'etc/conf/dhcpd.conf';
 
 // Função para extrair as informações de host do arquivo dhcpd.conf
 function extrair_hosts_dhcp($arquivo)
@@ -98,13 +98,13 @@ function adicionar_host_dhcp($arquivo, $novo_hostname, $novo_ip, $novo_mac, $hos
         ];
 
         // Recriar o conteúdo formatado do arquivo
-        $novo_conteudo = implode("\n", $cabecalho) . "\n\n"; // Preserva o cabeçalho com uma separação
+        $novo_conteudo = implode(PHP_EOL, $cabecalho) . PHP_EOL . PHP_EOL; // Preserva o cabeçalho com uma separação
 
         foreach ($hosts as $host) {
-            $novo_conteudo .= "host {$host['hostname']} {\n";
-            $novo_conteudo .= "    hardware ethernet {$host['mac']};\n";
-            $novo_conteudo .= "    fixed-address {$host['ip']};\n";
-            $novo_conteudo .= "}\n\n";
+            $novo_conteudo .= "host {$host['hostname']} {" . PHP_EOL;
+            $novo_conteudo .= "    hardware ethernet {$host['mac']};" . PHP_EOL;
+            $novo_conteudo .= "    fixed-address {$host['ip']};" . PHP_EOL;
+            $novo_conteudo .= "}" . PHP_EOL . PHP_EOL;
         }
 
         // Salvar o novo conteúdo no arquivo
